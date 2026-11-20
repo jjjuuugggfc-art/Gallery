@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Галерея</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: calm, private, a real phone gallery app
+   IDEA: a photo album with a secret back pocket
+   PICTURE: the photo grid itself fills the screen
+   COLOUR and TYPE: near-black ground, white ink, one coral accent; Manrope
+   LAYOUT: sticky search bar, 3-column grid, full-screen viewer with bottom actions */
+:root{color-scheme:light dark;--bg:light-dark(#f4f4f2,#0f1012);--card:light-dark(#ffffff,#1b1c20);--ink:light-dark(#141416,#f2f2f0);--mute:light-dark(#6b6b70,#9a9aa2);--line:light-dark(#e2e2de,#2a2b30);--acc:#ff5a4e;--hid:#7c5cff}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 Manrope,system-ui,sans-serif;overflow-x:clip;-webkit-tap-highlight-color:transparent}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;border-radius:12px;min-height:44px;padding:0 16px;background:var(--card);font-weight:600}
+button:focus-visible,input:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.pri{background:var(--acc);color:#fff}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:14px max(4vw,12px) 10px;border-bottom:1px solid var(--line)}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+h1{font-size:28px;line-height:1.05;margin:0;flex:1;font-weight:800}
+.ic{width:44px;padding:0;display:grid;place-items:center}
+.ic svg{width:22px;height:22px}
+form.s{display:flex;gap:8px}
+form.s input{flex:1;height:46px;border:1px solid var(--line);background:var(--card);border-radius:12px;padding:0 14px;font-size:16px}
+.bar{display:none;align-items:center;gap:10px;margin-top:10px;padding:8px 8px 8px 14px;border-radius:12px;background:var(--hid);color:#fff;font-weight:600}
+.bar span{flex:1}.bar button{background:#ffffff26;color:#fff;min-height:36px}
+body.hidden-mode .bar{display:flex}
+main{padding:12px max(4vw,12px) 90px}
+.info{color:var(--mute);font-size:14px;margin:0 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:4px}
+.ph{position:relative;aspect-ratio:1;border-radius:6px;overflow:hidden;background:var(--card);padding:0;min-height:0}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph i{position:absolute;left:0;right:0;bottom:0;padding:14px 6px 4px;font:600 12px/1.2 Manrope,sans-serif;font-style:normal;color:#fff;background:linear-gradient(transparent,#000a);text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{text-align:center;padding:60px 20px;color:var(--mute)}
+.empty b{display:block;color:var(--ink);font-size:20px;margin-bottom:6px}
+.fab{position:fixed;right:18px;bottom:22px;z-index:6;height:58px;border-radius:29px;padding:0 22px;background:var(--acc);color:#fff;box-shadow:0 6px 20px #0005;display:flex;align-items:center;gap:8px;font-size:16px}
+.fab svg{width:22px;height:22px}
+.view{position:fixed;inset:0;z-index:20;background:#000;display:none;flex-direction:column;color:#fff}
+.view.on{display:flex}
+.vt{display:flex;align-items:center;gap:8px;padding:10px 12px}
+.vt b{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:17px}
+.vt button,.va button{background:#ffffff1f;color:#fff}
+.vi{flex:1;display:grid;place-items:center;overflow:hidden;padding:0 4px}
+.vi img{max-width:100%;max-height:100%;object-fit:contain}
+.va{display:flex;gap:8px;padding:12px;flex-wrap:wrap;justify-content:center}
+.va button{flex:1 1 140px;display:flex;align-items:center;justify-content:center;gap:8px}
+.va svg{width:20px;height:20px}
+.va .del{background:#ff5a4e33;color:#ffb3ad}
+.dlg{position:fixed;inset:0;z-index:30;background:#0009;display:none;align-items:flex-end;justify-content:center}
+.dlg.on{display:flex}
+.box{background:var(--card);color:var(--ink);width:100%;max-width:480px;border-radius:20px 20px 0 0;padding:22px 18px 26px}
+@media(min-width:600px){.dlg{align-items:center}.box{border-radius:20px}}
+.box h2{margin:0 0 6px;font-size:22px;line-height:1.15}
+.box p{margin:0 0 14px;color:var(--mute);font-size:15px}
+.box input{width:100%;height:48px;border:1px solid var(--line);background:var(--bg);border-radius:12px;padding:0 14px;font-size:16px;margin-bottom:10px}
+.box .row{display:flex;gap:8px;margin-top:6px}.box .row button{flex:1}
+.box .row button:not(.pri){background:var(--bg)}
+.err{color:var(--acc);font-size:14px;min-height:20px;margin:-4px 0 6px}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%) translateY(20px);opacity:0;z-index:40;background:#222;color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;transition:.25s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.on{opacity:1;transform:translateX(-50%)}
+@media(prefers-reduced-motion:reduce){.toast{transition:none}}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1 id="ttl">Галерея</h1>
+    <button class="ic" id="setBtn" aria-label="Настройки"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></button>
+  </div>
+  <form class="s" id="sForm" autocomplete="off">
+    <input id="q" type="search" placeholder="Поиск по названию" aria-label="Поиск">
+    <button class="pri" type="submit">Поиск</button>
+  </form>
+  <div class="bar"><span>Скрытые фото</span><button id="exitHid">Выйти</button></div>
+</header>
+
+<main>
+  <p class="info" id="info"></p>
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" hidden></div>
+</main>
+
+<button class="fab" id="addBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 5v14M5 12h14"/></svg>Добавить</button>
+<input type="file" id="file" accept="image/*" multiple hidden>
+
+<div class="view" id="view">
+  <div class="vt"><button class="ic" id="vClose" aria-label="Назад"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 18l-6-6 6-6"/></svg></button><b id="vName"></b></div>
+  <div class="vi"><img id="vImg" alt=""></div>
+  <div class="va">
+    <button id="vRen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>Изменить имя</button>
+    <button id="vUnhide" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>Вернуть в галерею</button>
+    <button id="vDel" class="del"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>Удалить</button>
+  </div>
+</div>
+
+<div class="dlg" id="dlg"><form class="box" id="dForm" autocomplete="off">
+  <h2 id="dT"></h2><p id="dP"></p>
+  <input id="d1"><input id="d2">
+  <div class="err" id="dErr"></div>
+  <div class="row"><button type="button" id="dNo">Отмена</button><button class="pri" type="submit" id="dYes">Готово</button></div>
+</form></div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+{
+const $=id=>document.getElementById(id);
+let db=null,photos=[],hiddenMode=false,cur=null,urls=new Map(),dlgCb=null,codeHash=null;
+const mem={};
+const ls={get:k=>{try{return localStorage.getItem(k)}catch(e){return mem[k]??null}},set:(k,v)=>{try{localStorage.setItem(k,v)}catch(e){mem[k]=v}}};
+
+async function hash(s){
+  s='gal-v1:'+s.trim();
+  try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+  catch(e){let h=5381;for(const c of s)h=(h*33^c.charCodeAt(0))>>>0;return 'f'+h}
+}
+
+function openDB(){return new Promise(res=>{
+  try{const r=indexedDB.open('gallery',1);
+    r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('photos',{keyPath:'id'});d.createObjectStore('meta')};
+    r.onsuccess=()=>res(r.result);r.onerror=()=>res(null)}catch(e){res(null)}})}
+function tx(store,mode,fn){return new Promise((res,rej)=>{if(!db){res(null);return}
+  const t=db.transaction(store,mode),s=t.objectStore(store),r=fn(s);t.oncomplete=()=>res(r&&r.result);t.onerror=()=>rej(t.error)})}
+const putPhoto=p=>tx('photos','readwrite',s=>s.put(p));
+const delPhoto=id=>tx('photos','readwrite',s=>s.delete(id));
+const allPhotos=()=>tx('photos','readonly',s=>s.getAll());
+const getMeta=k=>tx('meta','readonly',s=>s.get(k));
+const setMeta=(k,v)=>tx('meta','readwrite',s=>s.put(v,k));
+
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2200)}
+function url(p,full){const k=p.id+(full?'f':'t');if(!urls.has(k))urls.set(k,URL.createObjectURL(full?p.full:p.thumb));return urls.get(k)}
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function render(){
+  const q=hiddenMode?'':$('q').value.trim().toLowerCase();
+  const list=photos.filter(p=>p.hidden===hiddenMode&&(!q||p.name.toLowerCase().includes(q))).sort((a,b)=>b.added-a.added);
+  document.body.classList.toggle('hidden-mode',hiddenMode);
+  $('ttl').textContent=hiddenMode?'Скрытые':'Галерея';
+  $('addBtn').hidden=hiddenMode;
+  $('grid').innerHTML=list.map(p=>`<button class="ph" data-id="${p.id}"><img src="${url(p)}" alt="${esc(p.name)}" loading="lazy"><i>${esc(p.name)}</i></button>`).join('');
+  const total=photos.filter(p=>p.hidden===hiddenMode).length;
+  $('info').textContent=total?(q?`Найдено: ${list.length}`:`Фото: ${total}`):'';
+  const em=$('empty');em.hidden=list.length>0;
+  em.innerHTML=hiddenMode?'<b>Скрытых фото нет</b>Откройте фото, нажмите «Изменить имя» и введите код — оно попадёт сюда.'
+    :q?'<b>Ничего не найдено</b>Попробуйте другое название.'
+    :'<b>Здесь пока пусто</b>Нажмите «Добавить», чтобы выбрать фото с телефона.';
+}
+
+function thumb(file){return new Promise(res=>{const img=new Image(),u=URL.createObjectURL(file);
+  img.onload=()=>{const m=360,sc=Math.min(1,m/Math.min(img.width,img.height)),c=document.createElement('canvas');
+    c.width=Math.round(img.width*sc);c.height=Math.round(img.height*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    URL.revokeObjectURL(u);c.toBlob(b=>res(b||file),'image/jpeg',.8)};
+  img.onerror=()=>{URL.revokeObjectURL(u);res(file)};img.src=u})}
+
+$('addBtn').onclick=()=>$('file').click();
+$('file').onchange=async e=>{
+  const files=[...e.target.files];if(!files.length)return;toast('Добавляю…');
+  let n=0;
+  for(const f of files){const p={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),name:f.name.replace(/\.[^.]+$/,'')||'Фото',
+    added:Date.now()+n,hidden:false,full:f,thumb:await thumb(f)};
+    try{await putPhoto(p)}catch(err){}photos.push(p);n++}
+  e.target.value='';render();toast(`Добавлено: ${n}`)};
+
+$('sForm').onsubmit=async e=>{e.preventDefault();
+  const v=$('q').value;
+  if(v.trim()&&codeHash&&await hash(v)===codeHash){hiddenMode=true;$('q').value='';$('q').blur();render();return}
+  render()};
+$('q').oninput=()=>{if(!hiddenMode)render()};
+$('exitHid').onclick=()=>{hiddenMode=false;render()};
+
+$('grid').onclick=e=>{const b=e.target.closest('.ph');if(!b)return;cur=photos.find(p=>p.id===b.dataset.id);openView()};
+function openView(){$('vImg').src=url(cur,true);$('vName').textContent=cur.name;$('vUnhide').hidden=!cur.hidden;$('view').classList.add('on')}
+function closeView(){$('view').classList.remove('on');cur=null}
+$('vClose').onclick=closeView;
+
+function dialog(o,cb){
+  $('dT').textContent=o.t;$('dP').textContent=o.p||'';$('dErr').textContent='';
+  [['d1',o.a],['d2',o.b]].forEach(([id,c])=>{const i=$(id);i.hidden=!c;if(c){i.value=c.v||'';i.placeholder=c.ph||'';i.type=c.type||'text'}});
+  $('dYes').textContent=o.ok||'Готово';$('dYes').classList.toggle('pri',!o.danger);$('dYes').style.background=o.danger?'var(--acc)':'';$('dYes').style.color=o.danger?'#fff':'';
+  $('dNo').hidden=!!o.noCancel;dlgCb=cb;$('dlg').classList.add('on');
+  setTimeout(()=>{if(o.a)$('d1').focus()},50)}
+const err=t=>$('dErr').textContent=t;
+$('dNo').onclick=()=>{$('dlg').classList.remove('on')};
+$('dForm').onsubmit=async e=>{e.preventDefault();if(dlgCb&&await dlgCb($('d1').value,$('d2').value)!==false)$('dlg').classList.remove('on')};
+
+$('vRen').onclick=()=>dialog({t:'Изменить имя',p:'Введите новое название фото.',a:{v:cur.name,ph:'Название'}},async v=>{
+  if(!v.trim()){err('Введите название');return false}
+  if(codeHash&&await hash(v)===codeHash){
+    if(cur.hidden){err('Фото уже скрыто');return false}
+    cur.hidden=true;await putPhoto(cur).catch(()=>{});closeView();render();toast('Фото скрыто');return}
+  cur.name=v.trim();await putPhoto(cur).catch(()=>{});$('vName').textContent=cur.name;render();toast('Имя изменено')});
+
+$('vUnhide').onclick=async()=>{cur.hidden=false;await putPhoto(cur).catch(()=>{});closeView();render();toast('Фото снова в галерее')};
+
+$('vDel').onclick=()=>dialog({t:'Удалить фото?',p:`«${cur.name}» будет удалено из галереи навсегда.`,ok:'Удалить',danger:true},async()=>{
+  await delPhoto(cur.id).catch(()=>{});photos=photos.filter(p=>p!==cur);closeView();render();toast('Удалено')});
+
+function setCode(first){
+  dialog({t:first?'Придумайте секретный код':'Сменить код',
+    p:first?'Этот код открывает скрытые фото: введите его в поиск. Чтобы скрыть фото, переименуйте его в этот код.':'Введите новый код дважды.',
+    a:{ph:'Новый код',type:'password'},b:{ph:'Повторите код',type:'password'},noCancel:first,ok:'Сохранить'},async(a,b)=>{
+    if(a.trim().length<3){err('Минимум 3 символа');return false}
+    if(a!==b){err('Коды не совпадают');return false}
+    codeHash=await hash(a);ls.set('gal-code',codeHash);await setMeta('code',codeHash).catch(()=>{});toast('Код сохранён')})}
+
+$('setBtn').onclick=()=>dialog({t:'Настройки',p:'Чтобы сменить секретный код, сначала введите текущий.',a:{ph:'Текущий код',type:'password'},ok:'Дальше'},async v=>{
+  if(await hash(v)!==codeHash){err('Неверный код');return false}
+  setTimeout(()=>setCode(false),60)});
+
+(async()=>{
+  db=await openDB();
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
+  try{photos=(await allPhotos())||[]}catch(e){photos=[]}
+  codeHash=ls.get('gal-code');
+  if(!codeHash){try{codeHash=await getMeta('code')}catch(e){}}
+  render();
+  if(!db)toast('Хранилище недоступно: фото не сохранятся после закрытия');
+  if(!codeHash)setCode(true);
+})();
+}
+</script>
+</body>
+</html>
